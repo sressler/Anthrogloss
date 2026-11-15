@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AnthroGloss: Standing &amp; Seated — X_ITE</title>
+<script src="https://cdn.jsdelivr.net/npm/x_ite@16.7.1/dist/x_ite.min.js"></script>
+<style>
+  :root { --bg:#14110f; --panel:#1e1a17; --line:#3a332d; --text:#ece6df; --muted:#a59a8f; --accent:#d9822b; }
+  * { box-sizing:border-box; }
+  html,body { margin:0; height:100%; background:var(--bg); color:var(--text);
+    font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif; }
+  .app { display:grid; grid-template-columns:1fr; grid-template-rows:auto 1fr; height:100vh; }
+  header { grid-column:1 / -1; display:flex; align-items:baseline; gap:14px; padding:10px 16px;
+    border-bottom:1px solid var(--line); background:var(--panel); }
+  header { min-height:48.4px; }
+  header .author { margin-left:auto; color:var(--accent); font-size:13px; text-decoration:none; }
+  header .author:hover { text-decoration:underline; }
+  header h1 { font-size:16px; margin:0; font-weight:600; }
+  header .sub { color:var(--muted); font-size:12px; }
+  .stage { position:relative; min-height:0; }
+  x3d-canvas { display:block; width:100%; height:100%; }
+    padding:4px 8px; border-radius:4px; cursor:pointer; font:inherit; font-size:13px; }
+  .info { font-size:12px; color:var(--muted); white-space:pre-wrap; }
+  /* progress overlay */
+  #progress { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    background:rgba(20,17,15,.92); z-index:5; transition:opacity .4s; }
+  #progress.done { opacity:0; pointer-events:none; }
+  .card { width:min(420px,90%); background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:18px 20px; }
+  .card h3 { margin:0 0 12px; font-size:15px; font-weight:600; }
+  .bar { height:8px; background:#2a2420; border-radius:4px; overflow:hidden; margin:6px 0 14px; }
+  .bar > div { height:100%; width:0; background:var(--accent); transition:width .15s; }
+  ol.steps { list-style:none; margin:0; padding:0; font-size:13px; }
+  ol.steps li { display:flex; justify-content:space-between; gap:10px; padding:3px 0; color:var(--muted); }
+  ol.steps li.active { color:var(--text); }
+  ol.steps li.ok { color:#9bc67a; }
+  ol.steps li.err { color:#e06c5a; }
+  .status { font-variant-numeric:tabular-nums; }
+  #errmsg { color:#e06c5a; font-size:12px; margin-top:10px; white-space:pre-wrap; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>AnthroGloss: Standing &amp; Seated</h1>
+    <span class="sub">NIST, Jan. 2000 · VRML 2.0 running in X_ITE</span>
+    <a class="author" href="https://www.linkedin.com/in/sressler/" target="_blank" rel="noopener">Sandy Ressler</a>
+  </header>
+  <div class="stage">
+    <x3d-canvas id="canvas" splashScreen="false" contextMenu="true"></x3d-canvas>
+    <div id="progress">
+      <div class="card">
+        <h3>Loading 3D world…</h3>
+        <div class="bar"><div id="bar"></div></div>
+        <ol class="steps" id="steps">
+          <li data-k="lib"><span>Load X_ITE browser</span><span class="status"></span></li>
+          <li data-k="decode"><span>Decode embedded world</span><span class="status"></span></li>
+          <li data-k="inflate"><span>Decompress VRML (gzip)</span><span class="status"></span></li>
+          <li data-k="parse"><span>Parse scene &amp; compile scripts</span><span class="status"></span></li>
+          <li data-k="render"><span>Build &amp; render</span><span class="status"></span></li>
+        </ol>
+        <div id="errmsg"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script id="world" type="application/octet-stream">__WORLD_B64__</script>
+<script>
+(() => {
+  const RAW_SIZE = __RAW_SIZE__;
+  const weights = { lib:5, decode:10, inflate:20, parse:50, render:15 };
+  const done = {};
+  const bar = document.getElementById("bar");
+  const li = k => document.querySelector(`#steps li[data-k="${k}"]`);
+  function set(k, frac, label, cls) {
+    done[k] = Math.max(0, Math.min(1, frac));
+    let t = 0; for (const key in weights) t += weights[key] * (done[key] || 0);
+    bar.style.width = t + "%";
+    const el = li(k);
+    el.className = cls || (frac >= 1 ? "ok" : "active");
+    if (label != null) el.querySelector(".status").textContent = label;
+  }
+  const tick = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
+  const fmt = n => n >= 1048576 ? (n/1048576).toFixed(2)+" MB" : (n/1024).toFixed(0)+" KB";
+  const t0 = performance.now();
+  const secs = t => ((performance.now() - t) / 1000).toFixed(2) + " s";
+  let current = "lib";
+
+  async function run() {
+    // 1. library
+    set("lib", 0.5, "…");
+    if (typeof X3D === "undefined") throw new Error("X_ITE library did not load (check network / CDN access).");
+    const canvas = document.getElementById("canvas");
+    const browser = X3D.getBrowser(canvas);
+    set("lib", 1, "v" + (browser.version || "ok"));
+
+    // 2. decode base64
+    current = "decode"; set("decode", 0.1, "…"); await tick();
+    let t = performance.now();
+    const b64 = document.getElementById("world").textContent.trim();
+    const bin = atob(b64);
+    const gz = new Uint8Array(bin.length);
+    const CH = 65536;
+    for (let i = 0; i < bin.length; i += CH) {
+      const end = Math.min(bin.length, i + CH);
+      for (let j = i; j < end; j++) gz[j] = bin.charCodeAt(j);
+      if ((i / CH) % 8 === 0) { set("decode", end / bin.length, fmt(end)); await tick(); }
+    }
+    set("decode", 1, fmt(gz.length) + " · " + secs(t));
+
+    // 3. inflate with streaming progress
+    current = "inflate"; set("inflate", 0, "0%"); await tick();
+    t = performance.now();
+    const stream = new Blob([gz]).stream().pipeThrough(new DecompressionStream("gzip"));
+    const reader = stream.getReader(); const parts = []; let got = 0;
+    for (;;) {
+      const { value, done: fin } = await reader.read();
+      if (fin) break;
+      parts.push(value); got += value.length;
+      set("inflate", got / RAW_SIZE, Math.round(100 * got / RAW_SIZE) + "% · " + fmt(got));
+    }
+    const text = await new Blob(parts).text();
+    set("inflate", 1, fmt(got) + " · " + secs(t));
+
+    // 4. parse
+    current = "parse"; set("parse", 0.15, "parsing " + text.split("\n").length.toLocaleString() + " lines…"); await tick();
+    t = performance.now();
+    let pulse = 0.15;
+    const timer = setInterval(() => { pulse = Math.min(0.95, pulse + (0.95 - pulse) * 0.08); set("parse", pulse); }, 120);
+    let scene;
+    try { scene = await browser.createX3DFromString(text); }
+    finally { clearInterval(timer); }
+    set("parse", 1, secs(t));
+
+    // 5. render
+    current = "render"; set("render", 0.3, "…"); await tick();
+    t = performance.now();
+    await browser.replaceWorld(scene);
+    await new Promise(r => { let n = 0; const f = () => (++n > 3 ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+    set("render", 1, secs(t));
+    bar.style.width = "100%";
+    document.querySelector(".card h3").textContent = "Loaded in " + secs(t0);
+    setTimeout(() => document.getElementById("progress").classList.add("done"), 600);
+
+    populate(scene);
+  }
+
+  // VRML 2.0 worlds in X_ITE teleport on script-driven binds; make every
+  // viewpoint change fly there with ease-in/ease-out instead.
+  const TRANSITION_TIME = 1.5; // seconds
+  function enableAnimatedTransitions(scene) {
+    try {
+      const nav = scene.rootNodes.flatMap(function find(n) {
+        if (!n) return [];
+        if (n.getNodeTypeName() === "NavigationInfo") return [n];
+        let kids = []; try { kids = Array.from(n.children || []); } catch (e) {}
+        return kids.flatMap(find);
+      })[0];
+      if (nav) nav.getValue()._transitionTime = TRANSITION_TIME;
+      window.__navInfo = nav;
+      const anyVp = scene.getNamedNode("VPB00").getValue();
+      const proto = Object.getPrototypeOf(anyVp);
+      if (proto.__animated) return;
+      proto.__animated = true;
+      proto.getVRMLTransition = function () { return true; };
+      const start = proto.transitionStart;
+      proto.transitionStart = function (layerNode, fromViewpointNode) {
+        start.call(this, layerNode, fromViewpointNode);
+        try {
+          this.easeInEaseOut._easeInEaseOut =
+            new X3D.MFVec2f(new X3D.SFVec2f(0, 1), new X3D.SFVec2f(1, 0));
+        } catch (e) {}
+      };
+    } catch (e) { console.warn("Animated transitions unavailable:", e); }
+  }
+
+  function populate(scene) {
+    enableAnimatedTransitions(scene);
+  }
+
+  function fail(e) {
+    console.error(e);
+    try { set(current, done[current] || 0, "failed", "err"); } catch (_) {}
+    document.querySelector(".card h3").textContent = "Could not load the world";
+    document.getElementById("errmsg").textContent = String(e && e.message || e);
+  }
+
+  const start = () => run().catch(fail);
+  if (document.readyState === "complete") start(); else window.addEventListener("load", start);
+})();
+</script>
+</body>
+</html>
