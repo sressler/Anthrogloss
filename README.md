@@ -1,6 +1,6 @@
 # AnthroGloss
 
-### [▶ RUN ME](https://claude.ai/artifact/RLDRgZ2TMoNxLVKZEtrGgr)
+### [▶ RUN ME](https://sressler.github.io/Anthrogloss/)
 
 ![AnthroGloss — standing man (left) and man in wheelchair (right) with their anthropometric landmark menus](images/anthrogloss.png)
 
