@@ -114,7 +114,7 @@ for name, cx in (('LEFTCOL_TRANSFORM', -0.098), ('RIGHTCOL_TRANSFORM', 0.1032)):
 # 7. default (home) positions captured from the user's display
 LEFT_HOME = '0.04271 -0.003044 0'
 RIGHT_HOME = '-0.048248 -0.004922 0'
-HOME_POS = '-1.385 -8.77 122.08'
+HOME_POS = '-1.72 -8.07 120.29'
 HOME_ORI = '0 -1 0 0.0174557'
 import os
 if os.environ.get('HOME_POS'): HOME_POS = os.environ['HOME_POS']
@@ -161,43 +161,76 @@ orientation {HOME_ORI}
 '''
 t, k = re.subn(r'(# General viewpoints\.\n)', lambda m: home_vps + m.group(1), t, count=1); assert k == 1
 
-# 9. BODY RESET button, left of DRAG RESET, same style
-body_reset = '''# Body-reset button (added): animates back to the home view.
-Shape {
+# 9. One RESET control group replaces the separate DRAG RESET / BODY RESET buttons:
+#    a darker frame labelled RESET holding three buttons, BODY | MENUS | ALL.
+Y0, Y1, Z = -.055, -.0522, -.15
+
+def quad(x0, x1, y0, y1, z):
+    return f'{x0} {y0} {z} {x1} {y0} {z} {x1} {y1} {z} {x0} {y1} {z}'
+
+def button(ts, label, x0, x1):
+    tw = 0.00185 * len(label)                        # approx. text width at size .0027
+    tx = round((x0 + x1) / 2 - tw / 2, 5)
+    return f"""Shape {{
 appearance USE CI_DRAGRESET_BACKPLATE_APP
-geometry IndexedFaceSet {
-coord Coordinate {
-point [ -.0625 -.055 -.15 -.0442 -.055 -.15 -.0442 -.0522 -.15 -.0625 -.0522 -.15 ] }
+geometry IndexedFaceSet {{
+coord Coordinate {{ point [ {quad(x0, x1, Y0, Y1, Z)} ] }}
 coordIndex [ 0 1 2 3 -1 ]
-}
-}
-Transform {
-translation -.0623 -.0545 -.1499
-children Shape {
+}}
+}}
+Transform {{
+translation {tx} -.0545 -.1499
+children Shape {{
 appearance USE WTXT_APP
-geometry Text {
-fontStyle FontStyle {
-family "SANS"
-size 0.0027
-}
-string "BODY RESET"
-}
-}
-}
-Group {
+geometry Text {{
+fontStyle FontStyle {{ family "SANS" size 0.0027 }}
+string "{label}"
+}}
+}}
+}}
+Group {{
 children [
-DEF BODYRESET_TS TouchSensor { }
-Shape {
+DEF {ts} TouchSensor {{ }}
+Shape {{
 appearance USE INVISPLATE_APP
-geometry IndexedFaceSet {
-coord Coordinate {
-point [ -.0625 -.055 -.1498 -.0442 -.055 -.1498 -.0442 -.0522 -.1498 -.0625 -.0522 -.1498 ] }
+geometry IndexedFaceSet {{
+coord Coordinate {{ point [ {quad(x0, x1, Y0, Y1, Z + .0002)} ] }}
 coordIndex [ 0 1 2 3 -1 ]
-}
-}
+}}
+}}
 ]
-}
-DEF BODYRESET_SCR Script {
+}}
+"""
+
+FX0, FX1 = -.0627, -.0215                            # frame spans the old two buttons
+reset_group = f"""# RESET control group (added): BODY flies back to the home view, MENUS returns
+# the dragged menus to their home positions, ALL does both.
+Shape {{
+appearance DEF RESETFRAME_APP Appearance {{ material Material {{ diffuseColor 0 .3 0 }} }}
+geometry IndexedFaceSet {{
+coord Coordinate {{ point [ {quad(FX0, FX1, Y0 - .0004, Y1 + .0004, Z - .0002)} ] }}
+coordIndex [ 0 1 2 3 -1 ]
+}}
+}}
+Transform {{
+translation {FX0 + .0006} -.0545 -.1499
+children Shape {{
+appearance USE WTXT_APP
+geometry Text {{
+fontStyle FontStyle {{ family "SANS" size 0.0027 }}
+string "RESET"
+}}
+}}
+}}
+""" + button('BODYRESET_TS', 'BODY', -.0520, -.0428) \
+    + button('DRAGRESET_TS', 'MENUS', -.0423, -.0310) \
+    + button('ALLRESET_TS', 'ALL', -.0305, -.0220)
+
+# drop the original DRAG RESET visuals (backplate, text, touch-plate)
+t, k = re.subn(r'# Drag-reset button and script\..*?(?=DEF DRAGRESET_SCR Script \{)',
+               lambda m: reset_group, t, count=1, flags=re.S); assert k == 1
+
+body_reset_script = """DEF BODYRESET_SCR Script {
 eventIn SFBool isActive
 eventIn SFBool aBound
 field SFBool aIsBound FALSE
@@ -215,11 +248,13 @@ else homeA.set_bind = TRUE;
 }
 "
 }
-'''
-t, k = re.subn(r'(DEF DRAGRESET_SCR Script \{)', lambda m: body_reset + m.group(1), t, count=1); assert k == 1
+"""
+t, k = re.subn(r'(DEF DRAGRESET_SCR Script \{)', lambda m: body_reset_script + m.group(1), t, count=1); assert k == 1
 t = t.replace('ROUTE DRAGRESET_TS.isActive TO DRAGRESET_SCR.isActive',
               'ROUTE DRAGRESET_TS.isActive TO DRAGRESET_SCR.isActive\n'
               'ROUTE BODYRESET_TS.isActive TO BODYRESET_SCR.isActive\n'
+              'ROUTE ALLRESET_TS.isActive TO DRAGRESET_SCR.isActive\n'
+              'ROUTE ALLRESET_TS.isActive TO BODYRESET_SCR.isActive\n'
               'ROUTE HOME_A.isBound TO BODYRESET_SCR.aBound')
 
 open(dst, 'w').write(t)

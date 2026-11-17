@@ -19977,66 +19977,39 @@ checkAndWcChoice = 0;
 }
 "
 }
-# Drag-reset button and script.  Clicking this button causes all the draggable
-# things to return to their starting positions.
-# Back-plate.
+# RESET control group (added): BODY flies back to the home view, MENUS returns
+# the dragged menus to their home positions, ALL does both.
 Shape {
-appearance USE CI_DRAGRESET_BACKPLATE_APP
+appearance DEF RESETFRAME_APP Appearance { material Material { diffuseColor 0 .3 0 } }
 geometry IndexedFaceSet {
-coord Coordinate {
-point [ -.04 -.055 -.15 -.0217 -.055 -.15 -.0217 -.0522 -.15 -.04 -.0522 -.15
-] }
-coordIndex [ 0 1 2 3 -1 ]
-}
-}
-# "DRAG RESET".
-Transform {
-translation -.0398 -.0545 -.1499
-children Shape {
-appearance USE WTXT_APP
-geometry Text {
-fontStyle FontStyle {
-family "SANS"
-size 0.0027
-}
-string "DRAG RESET"
-}
-}
-}
-# Invisible touch-plate.
-Group {
-children [
-DEF DRAGRESET_TS TouchSensor { }
-Shape {
-appearance USE INVISPLATE_APP
-geometry IndexedFaceSet {
-coord Coordinate {
-point [ -.04 -.055 -.1498 -.0217 -.055 -.1498 -.0217 -.0522 -.1498 -.04 -.0522
--.1498 ] }
-coordIndex [ 0 1 2 3 -1 ]
-}
-}
-]
-}
-# Body-reset button (added): animates back to the home view.
-Shape {
-appearance USE CI_DRAGRESET_BACKPLATE_APP
-geometry IndexedFaceSet {
-coord Coordinate {
-point [ -.0625 -.055 -.15 -.0442 -.055 -.15 -.0442 -.0522 -.15 -.0625 -.0522 -.15 ] }
+coord Coordinate { point [ -0.0627 -0.0554 -0.1502 -0.0215 -0.0554 -0.1502 -0.0215 -0.051800000000000006 -0.1502 -0.0627 -0.051800000000000006 -0.1502 ] }
 coordIndex [ 0 1 2 3 -1 ]
 }
 }
 Transform {
-translation -.0623 -.0545 -.1499
+translation -0.0621 -.0545 -.1499
 children Shape {
 appearance USE WTXT_APP
 geometry Text {
-fontStyle FontStyle {
-family "SANS"
-size 0.0027
+fontStyle FontStyle { family "SANS" size 0.0027 }
+string "RESET"
 }
-string "BODY RESET"
+}
+}
+Shape {
+appearance USE CI_DRAGRESET_BACKPLATE_APP
+geometry IndexedFaceSet {
+coord Coordinate { point [ -0.052 -0.055 -0.15 -0.0428 -0.055 -0.15 -0.0428 -0.0522 -0.15 -0.052 -0.0522 -0.15 ] }
+coordIndex [ 0 1 2 3 -1 ]
+}
+}
+Transform {
+translation -0.0511 -.0545 -.1499
+children Shape {
+appearance USE WTXT_APP
+geometry Text {
+fontStyle FontStyle { family "SANS" size 0.0027 }
+string "BODY"
 }
 }
 }
@@ -20046,8 +20019,65 @@ DEF BODYRESET_TS TouchSensor { }
 Shape {
 appearance USE INVISPLATE_APP
 geometry IndexedFaceSet {
-coord Coordinate {
-point [ -.0625 -.055 -.1498 -.0442 -.055 -.1498 -.0442 -.0522 -.1498 -.0625 -.0522 -.1498 ] }
+coord Coordinate { point [ -0.052 -0.055 -0.1498 -0.0428 -0.055 -0.1498 -0.0428 -0.0522 -0.1498 -0.052 -0.0522 -0.1498 ] }
+coordIndex [ 0 1 2 3 -1 ]
+}
+}
+]
+}
+Shape {
+appearance USE CI_DRAGRESET_BACKPLATE_APP
+geometry IndexedFaceSet {
+coord Coordinate { point [ -0.0423 -0.055 -0.15 -0.031 -0.055 -0.15 -0.031 -0.0522 -0.15 -0.0423 -0.0522 -0.15 ] }
+coordIndex [ 0 1 2 3 -1 ]
+}
+}
+Transform {
+translation -0.04128 -.0545 -.1499
+children Shape {
+appearance USE WTXT_APP
+geometry Text {
+fontStyle FontStyle { family "SANS" size 0.0027 }
+string "MENUS"
+}
+}
+}
+Group {
+children [
+DEF DRAGRESET_TS TouchSensor { }
+Shape {
+appearance USE INVISPLATE_APP
+geometry IndexedFaceSet {
+coord Coordinate { point [ -0.0423 -0.055 -0.1498 -0.031 -0.055 -0.1498 -0.031 -0.0522 -0.1498 -0.0423 -0.0522 -0.1498 ] }
+coordIndex [ 0 1 2 3 -1 ]
+}
+}
+]
+}
+Shape {
+appearance USE CI_DRAGRESET_BACKPLATE_APP
+geometry IndexedFaceSet {
+coord Coordinate { point [ -0.0305 -0.055 -0.15 -0.022 -0.055 -0.15 -0.022 -0.0522 -0.15 -0.0305 -0.0522 -0.15 ] }
+coordIndex [ 0 1 2 3 -1 ]
+}
+}
+Transform {
+translation -0.02902 -.0545 -.1499
+children Shape {
+appearance USE WTXT_APP
+geometry Text {
+fontStyle FontStyle { family "SANS" size 0.0027 }
+string "ALL"
+}
+}
+}
+Group {
+children [
+DEF ALLRESET_TS TouchSensor { }
+Shape {
+appearance USE INVISPLATE_APP
+geometry IndexedFaceSet {
+coord Coordinate { point [ -0.0305 -0.055 -0.1498 -0.022 -0.055 -0.1498 -0.022 -0.0522 -0.1498 -0.0305 -0.0522 -0.1498 ] }
 coordIndex [ 0 1 2 3 -1 ]
 }
 }
@@ -25364,6 +25394,8 @@ ROUTE LEFTCOL_DRAG.translation_changed TO LEFTCOL_TRANSFORM.translation
 ROUTE RIGHTCOL_DRAG.translation_changed TO RIGHTCOL_TRANSFORM.translation
 ROUTE DRAGRESET_TS.isActive TO DRAGRESET_SCR.isActive
 ROUTE BODYRESET_TS.isActive TO BODYRESET_SCR.isActive
+ROUTE ALLRESET_TS.isActive TO DRAGRESET_SCR.isActive
+ROUTE ALLRESET_TS.isActive TO BODYRESET_SCR.isActive
 ROUTE HOME_A.isBound TO BODYRESET_SCR.aBound
 ROUTE DRAGRESET_SCR.resetTrans TO CP_TRANSFORM.translation
 ROUTE DRAGRESET_SCR.resetLeft TO LEFTCOL_TRANSFORM.translation

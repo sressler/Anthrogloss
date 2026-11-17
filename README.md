@@ -14,8 +14,10 @@ using the [X_ITE](https://create3000.github.io/x_ite/) X3D/VRML browser, combine
 
 - **Landmark spheres** (the two columns): click a sphere to fly to that landmark's viewpoint,
   highlight it on the body, and show its full name.
-- **BODY RESET** flies back to the home view of the body.
-- **DRAG RESET** returns the dragged menus (landmark columns, control panel, name banner) to their home positions.
+- **RESET** group:
+  - **BODY** flies back to the home view of the body.
+  - **MENUS** returns the dragged menus (landmark columns, control panel, name banner) to their home positions.
+  - **ALL** does both.
 - **SHOW SEATED / SHOW STANDING** switches between the two bodies.
 - **CONTROLS** opens the original panel of body planes, arm-reach indicators, sight cone
   (and, for the seated man, the wheelchair).
@@ -48,7 +50,8 @@ it loads X_ITE from the jsDelivr CDN, so it needs an internet connection).
   are now plain groups and the sphere's script binds the viewpoint directly.
 - **Animated transitions** — the page makes every viewpoint change fly with ease-in/ease-out (1.5 s).
 - **Layout** — landmark columns scaled to 50 %, new default (home) positions for the columns and
-  the body, `DRAG RESET` returns to those positions, and a new **BODY RESET** button.
+  the body. The original `DRAG RESET` button is replaced by a **RESET** group: **BODY** (home view),
+  **MENUS** (home menu positions, the old DRAG RESET) and **ALL**.
 - **Combined world** — both bodies in one `Switch` (standing man by default); the wheelchair world's
   DEF names carry a `B_` prefix. A shared Background and NavigationInfo sit outside the Switch.
 
